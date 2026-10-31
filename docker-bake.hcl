@@ -8,9 +8,9 @@ variable "FIREFOX_VERSION" { default = "159" }
 variable "EDGE_VERSION" { default = "156" }
 
 # The Release workflow updates these lines. Keep each on one line.
-variable "NODE_PUBLISHED_TAG" { default = "ubuntu-24-04-nodejs-26.13.0-b" }
-variable "VISUALMETRICS_DEPS_PUBLISHED_TAG" { default = "ffmpeg-7.1.1-g" }
-variable "BROWSERS_PUBLISHED_TAG" { default = "chrome-156.0-firefox-159.0-edge-156.0-b" }
+variable "NODE_PUBLISHED_TAG" { default = "ubuntu-24-04-nodejs-26.13.0-20261031" }
+variable "VISUALMETRICS_DEPS_PUBLISHED_TAG" { default = "ffmpeg-7.1.1-20261031" }
+variable "BROWSERS_PUBLISHED_TAG" { default = "chrome-156.0-firefox-159.0-edge-156.0-20261031" }
 
 variable "DATE" { default = "dev" }
 # The first image to build. Images before it come from Docker Hub.
