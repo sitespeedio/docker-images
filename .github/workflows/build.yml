@@ -30,6 +30,19 @@ jobs:
       - name: Check the tools in the browsers image
         run: docker run --rm sitespeedio/webbrowsers:test bash -c 'node --version && ffmpeg -version | head -1 && python --version && google-chrome --version && firefox --version'
 
+      # A browser can report its version but still fail to start, so test with a real run
+      - name: Run Browsertime with video and Visual Metrics
+        env:
+          BROWSERS: ${{ matrix.platform == 'linux/amd64' && 'chrome firefox edge' || 'chrome firefox' }}
+        run: |
+          docker run --rm -e BROWSERS -e BROWSERTIME_XVFB=true -e BROWSERTIME_DOCKER=true -e BROWSERTIME_CONNECTIVITY__ENGINE=external sitespeedio/webbrowsers:test bash -c '
+            set -e
+            npm install -g --silent browsertime
+            for browser in $BROWSERS; do
+              browsertime -b "$browser" -n 1 --video --visualMetrics --resultDir "/results/$browser" https://www.sitespeed.io
+              grep -q "\"SpeedIndex\"" "/results/$browser/browsertime.json"
+            done'
+
       # The browsers image has the layers of all the images
       - name: Run Trivy vulnerability scanner
         if: ${{ matrix.platform == 'linux/amd64' }}

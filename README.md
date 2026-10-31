@@ -5,7 +5,7 @@ The base images for [sitespeed.io](https://github.com/sitespeedio/sitespeed.io) 
 | Directory | Image | Contents |
 | --- | --- | --- |
 | [node](node/) | `sitespeedio/node` | Ubuntu and NodeJS |
-| [visualmetrics-deps](visualmetrics-deps/) | `sitespeedio/visualmetrics-deps` | The dependencies for [VisualMetrics](https://github.com/WPO-Foundation/visualmetrics): FFmpeg, ImageMagick and Python |
+| [visualmetrics-deps](visualmetrics-deps/) | `sitespeedio/visualmetrics-deps` | The dependencies for [VisualMetrics](https://github.com/WPO-Foundation/visualmetrics): FFmpeg and Python |
 | [browsers](browsers/) | `sitespeedio/webbrowsers` | Chrome, Firefox and Edge. For AMD64 you can choose versions. For ARM64 we use the latest supported version. |
 
 All versions are in [docker-bake.hcl](docker-bake.hcl).
