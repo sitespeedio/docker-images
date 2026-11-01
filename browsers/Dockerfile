@@ -48,7 +48,7 @@ RUN fonts='fonts-ipafont-gothic fonts-ipafont-mincho ttf-wqy-microhei fonts-wqy-
       echo "deb [signed-by=/etc/apt/keyrings/packages.mozilla.org.asc] https://packages.mozilla.org/apt mozilla main" > /etc/apt/sources.list.d/mozilla.list && \
       apt-get update && \
       apt-get install -y --no-install-recommends firefox=${FIREFOX_VERSION} && \
-      apt-get install -y \
+      apt-get install -y --no-install-recommends \
         google-chrome-stable=${CHROME_VERSION} \
         microsoft-edge-stable=${EDGE_VERSION}; \
   elif [ "$TARGETPLATFORM" = "linux/arm64" ]; then \
@@ -61,8 +61,8 @@ RUN fonts='fonts-ipafont-gothic fonts-ipafont-mincho ttf-wqy-microhei fonts-wqy-
       echo "deb [arch=arm64 signed-by=/etc/apt/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list && \
       add-apt-repository -y ppa:xtradeb/apps && \
       apt-get update && \
-      apt-get install -y -t 'o=LP-PPA-mozillateam' firefox && \
-      apt-get install -y google-chrome-stable=${CHROME_VERSION} && \
+      apt-get install -y --no-install-recommends -t 'o=LP-PPA-mozillateam' firefox && \
+      apt-get install -y --no-install-recommends google-chrome-stable=${CHROME_VERSION} && \
       # The chromedriver npm package does not download the Chrome for Testing linux-arm64 driver, so install it on the PATH
       CHROMEDRIVER_VERSION=$(wget -q -O- "https://googlechromelabs.github.io/chrome-for-testing/LATEST_RELEASE_${CHROME_VERSION%%.*}") && \
       wget -q -O /tmp/chromedriver.zip "https://storage.googleapis.com/chrome-for-testing-public/${CHROMEDRIVER_VERSION}/linux-arm64/chromedriver-linux-arm64.zip" && \
