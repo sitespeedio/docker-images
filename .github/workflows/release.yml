@@ -10,18 +10,56 @@ on:
           - visualmetrics-deps
           - browsers
         default: node
+  push:
+    branches:
+      - main
+    paths:
+      - 'docker-bake.hcl'
+      - 'node/**'
+      - 'visualmetrics-deps/**'
+      - 'browsers/**'
 concurrency:
   group: release
 permissions:
   contents: read
-env:
-  START_AT: ${{ inputs.start_at }}
 jobs:
   prepare:
     runs-on: ubuntu-latest
     outputs:
       date: ${{ steps.date.outputs.date }}
+      start_at: ${{ steps.start_at.outputs.start_at }}
     steps:
+      - name: Checkout
+        if: ${{ github.event_name == 'push' }}
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0
+
+      # A push to main starts at the first image that changed
+      - name: Get the first image to build
+        id: start_at
+        env:
+          INPUT_START_AT: ${{ inputs.start_at }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+            echo "start_at=$INPUT_START_AT" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          files=$(git diff --name-only "$BEFORE" "$GITHUB_SHA")
+          variables=$(git diff -U0 "$BEFORE" "$GITHUB_SHA" -- docker-bake.hcl | grep -E '^[-+][^-+]' | grep -vE '_PUBLISHED_TAG|^[-+] *#' || true)
+          start_at=
+          if grep -q '^node/' <<< "$files" || grep -qE 'UBUNTU_|NODE_VERSION' <<< "$variables"; then
+            start_at=node
+          elif grep -q '^visualmetrics-deps/' <<< "$files" || grep -q 'FFMPEG_VERSION' <<< "$variables"; then
+            start_at=visualmetrics-deps
+          elif grep -q '^browsers/' <<< "$files" || grep -qE '(CHROME|FIREFOX|EDGE)_VERSION' <<< "$variables"; then
+            start_at=browsers
+          elif [ -n "$variables" ]; then
+            start_at=node
+          fi
+          echo "start_at=$start_at" >> "$GITHUB_OUTPUT"
+
       # Get the date one time so that all platforms get the same tag
       - name: Get the date
         id: date
@@ -30,9 +68,11 @@ jobs:
   build:
     name: Build ${{ matrix.platform }}
     needs: prepare
+    if: ${{ needs.prepare.outputs.start_at != '' }}
     runs-on: ${{ matrix.runner }}
     env:
       DATE: ${{ needs.prepare.outputs.date }}
+      START_AT: ${{ needs.prepare.outputs.start_at }}
       PUSH_BY_DIGEST: true
     strategy:
       matrix:
@@ -72,6 +112,7 @@ jobs:
       contents: write
     env:
       DATE: ${{ needs.prepare.outputs.date }}
+      START_AT: ${{ needs.prepare.outputs.start_at }}
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6

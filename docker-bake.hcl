@@ -1,4 +1,4 @@
-# Change a version here, then run the Release workflow.
+# Change a version here. The Release workflow starts when the change is on main.
 variable "UBUNTU_IMAGE" { default = "ubuntu:noble-20261024.1" }
 variable "UBUNTU_VERSION" { default = "24-04" }
 variable "NODE_VERSION" { default = "26.13.0" }
