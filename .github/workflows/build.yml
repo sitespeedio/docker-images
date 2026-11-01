@@ -43,7 +43,7 @@ jobs:
         working-directory: sitespeed.io
         run: |
           docker tag sitespeedio/webbrowsers:test "$(sed -n 's/^FROM //p' Dockerfile)"
-          docker buildx build --builder default --load --platform ${{ matrix.platform }} --build-arg TARGETPLATFORM=${{ matrix.platform }} -t sitespeedio/sitespeed.io:test .
+          docker buildx build --builder default --load --platform ${{ matrix.platform }} -t sitespeedio/sitespeed.io:test .
 
       - name: Test sitespeed.io
         working-directory: sitespeed.io
