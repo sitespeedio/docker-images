@@ -31,17 +31,37 @@ jobs:
         run: docker run --rm sitespeedio/webbrowsers:test bash -c 'node --version && ffmpeg -version | head -1 && python --version && google-chrome --version && firefox --version'
 
       # A browser can report its version but still fail to start, so test with a real run
-      - name: Run Browsertime with video and Visual Metrics
+      - name: Checkout sitespeed.io
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          repository: sitespeedio/sitespeed.io
+          path: sitespeed.io
+
+      # Use the new browsers image for the image name in the sitespeed.io FROM line
+      - name: Build sitespeed.io on the browsers image
+        working-directory: sitespeed.io
+        run: |
+          docker tag sitespeedio/webbrowsers:test "$(sed -n 's/^FROM //p' Dockerfile)"
+          docker buildx build --builder default --load --platform ${{ matrix.platform }} --build-arg TARGETPLATFORM=${{ matrix.platform }} -t sitespeedio/sitespeed.io:test .
+
+      - name: Test sitespeed.io
+        working-directory: sitespeed.io
         env:
           BROWSERS: ${{ matrix.platform == 'linux/amd64' && 'chrome firefox edge' || 'chrome firefox' }}
         run: |
-          docker run --rm -e BROWSERS -e BROWSERTIME_XVFB=true -e BROWSERTIME_DOCKER=true -e BROWSERTIME_CONNECTIVITY__ENGINE=external sitespeedio/webbrowsers:test bash -c '
-            set -e
-            npm install -g --silent browsertime
-            for browser in $BROWSERS; do
-              browsertime -b "$browser" -n 1 --video --visualMetrics --resultDir "/results/$browser" https://www.sitespeed.io
-              grep -q "\"SpeedIndex\"" "/results/$browser/browsertime.json"
-            done'
+          run() {
+            local name=$1
+            shift
+            docker run --rm -v "$(pwd)":/sitespeed.io "$@" --outputFolder "/sitespeed.io/results/$name"
+            grep -rq '"SpeedIndex"' "results/$name"
+          }
+          docker run -d --network host -v "$(pwd)/test/data/html:/html:ro" sitespeedio/webbrowsers:test python3 -m http.server 3001 -d /html
+          for browser in $BROWSERS; do
+            run "$browser" --network=host sitespeedio/sitespeed.io:test http://127.0.0.1:3001 -n 1 -b "$browser"
+          done
+          run chrome-config --network=host sitespeedio/sitespeed.io:test http://127.0.0.1:3001 -b chrome --config test/exampleConfig.json
+          run wpr-chrome --cap-add=NET_ADMIN -e REPLAY=true -e LATENCY=100 sitespeedio/sitespeed.io:test https://www.sitespeed.io -n 3 -b chrome
+          run wpr-firefox --cap-add=NET_ADMIN --network=host -e REPLAY=true -e LATENCY=100 sitespeedio/sitespeed.io:test https://www.sitespeed.io -n 3 -b firefox --browsertime.firefox.acceptInsecureCerts true
 
       # The browsers image has the layers of all the images
       - name: Run Trivy vulnerability scanner
