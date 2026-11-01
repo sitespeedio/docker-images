@@ -11,10 +11,11 @@ The base images for [sitespeed.io](https://github.com/sitespeedio/sitespeed.io) 
 All versions are in [docker-bake.hcl](docker-bake.hcl).
 
 ## Release
-1. Change the versions in [docker-bake.hcl](docker-bake.hcl) and merge the change to main.
-2. Run the [Release workflow](../../actions/workflows/release.yml) and select the first image that changed. The workflow builds that image and all the images after it, natively on AMD64 and ARM64 runners.
+Every day the [Check for new versions workflow](../../actions/workflows/check-versions.yml) looks for new versions of Ubuntu, the NodeJS LTS, Chrome, Firefox and Edge. When it finds one, it opens an "Update versions" pull request that changes [docker-bake.hcl](docker-bake.hcl) and runs the build and the sitespeed.io tests on it. You can also change the versions or the Dockerfiles in your own pull request.
 
-To start the release from the command line with the [GitHub CLI](https://cli.github.com/), and follow the run:
+When a change to [docker-bake.hcl](docker-bake.hcl) or a Dockerfile is merged to main, the [Release workflow](../../actions/workflows/release.yml) starts. It builds the first image that changed and all the images after it, natively on AMD64 and ARM64 runners.
+
+To start a release by hand from the command line with the [GitHub CLI](https://cli.github.com/), select the first image to build, and follow the run:
 
 ```
 gh workflow run release.yml -R sitespeedio/docker-images -f start_at=node

@@ -1,0 +1,43 @@
+name: Check for new versions
+on:
+  schedule:
+    - cron: '17 5 * * *'
+  workflow_dispatch:
+concurrency:
+  group: check-versions
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    env:
+      BRANCH: update-versions
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Update the versions
+        run: ./scripts/update-versions.sh | tee changes.txt
+
+      - name: Open or update the pull request
+        run: |
+          git diff --quiet docker-bake.hcl && exit 0
+          # Do not push again when the pull request already has these versions
+          if git fetch -q origin "$BRANCH" && git diff --quiet FETCH_HEAD -- docker-bake.hcl; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B "$BRANCH"
+          git commit -m "Update versions" -m "$(cat changes.txt)" docker-bake.hcl
+          git push -f origin "$BRANCH"
+          if [ "$(gh pr view "$BRANCH" --json state -q .state 2>/dev/null)" = OPEN ]; then
+            gh pr edit "$BRANCH" --body-file changes.txt
+          else
+            gh pr create --head "$BRANCH" --title "Update versions" --body-file changes.txt
+          fi
+          # Pull requests and pushes made with the GITHUB_TOKEN do not start workflows
+          gh workflow run build.yml --ref "$BRANCH"
