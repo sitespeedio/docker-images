@@ -75,3 +75,25 @@ jobs:
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL'
+
+  # Merge the "Update versions" pull request when the build and the tests pass on both
+  # platforms. The merge is made by the GitHub App so that it starts the Release workflow.
+  merge:
+    needs: build
+    if: ${{ github.event_name == 'pull_request' && github.head_ref == 'update-versions' && github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Get a GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
+      # Only merge the commit that was tested
+      - name: Merge the pull request
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          PR: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: gh pr merge "$PR" -R "$GITHUB_REPOSITORY" --merge --match-head-commit "$HEAD_SHA"

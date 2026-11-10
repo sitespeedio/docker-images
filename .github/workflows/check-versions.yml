@@ -6,31 +6,42 @@ on:
 concurrency:
   group: check-versions
 permissions:
-  contents: write
-  pull-requests: write
-  actions: write
+  contents: read
 jobs:
   check:
     runs-on: ubuntu-24.04
     env:
       BRANCH: update-versions
-      GH_TOKEN: ${{ github.token }}
     steps:
+      # Pushes and pull requests made with the GITHUB_TOKEN do not start workflows,
+      # so the GitHub App opens the pull request
+      - name: Get a GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Update the versions
         run: ./scripts/update-versions.sh | tee changes.txt
 
       - name: Open or update the pull request
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          APP_USER: ${{ steps.app-token.outputs.app-slug }}[bot]
         run: |
           git diff --quiet docker-bake.hcl && exit 0
           # Do not push again when the pull request already has these versions
           if git fetch -q origin "$BRANCH" && git diff --quiet FETCH_HEAD -- docker-bake.hcl; then
             exit 0
           fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "$APP_USER"
+          git config user.email "$(gh api "/users/$APP_USER" --jq .id)+$APP_USER@users.noreply.github.com"
           git checkout -B "$BRANCH"
           git commit -m "Update versions" -m "$(cat changes.txt)" docker-bake.hcl
           git push -f origin "$BRANCH"
@@ -39,5 +50,3 @@ jobs:
           else
             gh pr create --head "$BRANCH" --title "Update versions" --body-file changes.txt
           fi
-          # Pull requests and pushes made with the GITHUB_TOKEN do not start workflows
-          gh workflow run build.yml --ref "$BRANCH"
