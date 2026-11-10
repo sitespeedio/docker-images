@@ -4,7 +4,7 @@ variable "UBUNTU_VERSION" { default = "24-04" }
 variable "NODE_VERSION" { default = "26.13.0" }
 variable "FFMPEG_VERSION" { default = "7.1.1" }
 variable "CHROME_VERSION" { default = "157" }
-variable "FIREFOX_VERSION" { default = "159" }
+variable "FIREFOX_VERSION" { default = "160" }
 variable "EDGE_VERSION" { default = "157" }
 
 # The Release workflow updates these lines. Keep each on one line.
