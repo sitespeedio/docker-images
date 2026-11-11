@@ -45,8 +45,9 @@ jobs:
           git checkout -B "$BRANCH"
           git commit -m "Update versions" -m "$(cat changes.txt)" docker-bake.hcl
           git push -f origin "$BRANCH"
+          title="Update $(paste -sd , changes.txt | sed 's/,/, /g')"
           if [ "$(gh pr view "$BRANCH" --json state -q .state 2>/dev/null)" = OPEN ]; then
-            gh pr edit "$BRANCH" --body-file changes.txt
+            gh pr edit "$BRANCH" --title "$title" --body-file changes.txt
           else
-            gh pr create --head "$BRANCH" --title "Update versions" --body-file changes.txt
+            gh pr create --head "$BRANCH" --title "$title" --body-file changes.txt
           fi

@@ -8,7 +8,7 @@ current() {
 }
 
 set_version() {
-  local name=$1 version=$2 old
+  local name=$1 version=$2 label=$3 old
   old=$(current "$name")
   if [ -z "$version" ]; then
     echo "Found no version for $name" >&2
@@ -16,7 +16,7 @@ set_version() {
   fi
   if [ "$old" != "$version" ]; then
     sed -i "s|^variable \"$name\" { default = \".*\" }$|variable \"$name\" { default = \"$version\" }|" docker-bake.hcl
-    echo "$name: $old -> $version"
+    echo "$label ${old#ubuntu:} -> ${version#ubuntu:}"
   fi
 }
 
@@ -33,16 +33,16 @@ major() {
 
 ubuntu=$(curl -fsS 'https://hub.docker.com/v2/repositories/library/ubuntu/tags?page_size=100&name=noble-' |
   jq -r '.results[].name' | grep -E '^noble-[0-9]{8}(\.[0-9]+)?$' | sort -V | tail -1)
-set_version UBUNTU_IMAGE "ubuntu:$ubuntu"
+set_version UBUNTU_IMAGE "ubuntu:$ubuntu" Ubuntu
 
 node=$(curl -fsS https://nodejs.org/dist/index.json | jq -r '[.[] | select(.lts)][0].version')
-set_version NODE_VERSION "${node#v}"
+set_version NODE_VERSION "${node#v}" Node.js
 
 # Use the highest major that both platforms have, so that the arm64 build does not wait for its package
 chrome_amd64=$(major "$(apt_version https://dl.google.com/linux/chrome/deb/dists/stable/main/binary-amd64/Packages google-chrome-stable)")
 chrome_arm64=$(major "$(apt_version https://dl.google.com/linux/chrome/deb/dists/stable/main/binary-arm64/Packages google-chrome-stable)")
-set_version CHROME_VERSION "$(( chrome_amd64 < chrome_arm64 ? chrome_amd64 : chrome_arm64 ))"
+set_version CHROME_VERSION "$(( chrome_amd64 < chrome_arm64 ? chrome_amd64 : chrome_arm64 ))" Chrome
 
-set_version FIREFOX_VERSION "$(major "$(apt_version https://packages.mozilla.org/apt/dists/mozilla/main/binary-amd64/Packages firefox)")"
+set_version FIREFOX_VERSION "$(major "$(apt_version https://packages.mozilla.org/apt/dists/mozilla/main/binary-amd64/Packages firefox)")" Firefox
 
-set_version EDGE_VERSION "$(major "$(apt_version https://packages.microsoft.com/repos/edge/dists/stable/main/binary-amd64/Packages.gz microsoft-edge-stable)")"
+set_version EDGE_VERSION "$(major "$(apt_version https://packages.microsoft.com/repos/edge/dists/stable/main/binary-amd64/Packages.gz microsoft-edge-stable)")" Edge
