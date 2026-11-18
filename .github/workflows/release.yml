@@ -28,6 +28,7 @@ jobs:
     outputs:
       date: ${{ steps.date.outputs.date }}
       start_at: ${{ steps.start_at.outputs.start_at }}
+      changes: ${{ steps.start_at.outputs.changes }}
     steps:
       - name: Checkout
         if: ${{ github.event_name == 'push' }}
@@ -59,6 +60,13 @@ jobs:
             start_at=node
           fi
           echo "start_at=$start_at" >> "$GITHUB_OUTPUT"
+          # The pull requests in the projects show each version that changed
+          {
+            echo 'changes<<EOF'
+            sed -nE 's/^([-+])variable "([A-Z_]+)" \{ default = "(.*)" \}$/\1 \2 \3/p' <<< "$variables" |
+              awk '$1 == "-" { old[$2] = $3 } $1 == "+" { print $2, old[$2], "->", $3 }'
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
 
       # Get the date one time so that all platforms get the same tag
       - name: Get the date
@@ -159,7 +167,7 @@ jobs:
   # Open a pull request in each project that uses the new browsers image.
   # The project's own CI tests it and a maintainer merges it.
   update-dockerfiles:
-    needs: publish
+    needs: [prepare, publish]
     if: ${{ needs.publish.outputs.webbrowsers_tag != '' }}
     runs-on: ubuntu-latest
     strategy:
@@ -190,7 +198,9 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           APP_USER: ${{ steps.app-token.outputs.app-slug }}[bot]
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          CHANGES: ${{ needs.prepare.outputs.changes }}
         run: |
+          old_tag=$(sed -n 's|^FROM sitespeedio/webbrowsers:||p' Dockerfile)
           sed -i "s|^FROM sitespeedio/webbrowsers:.*$|FROM sitespeedio/webbrowsers:$TAG|" Dockerfile
           git diff --quiet Dockerfile && exit 0
           git config user.name "$APP_USER"
@@ -199,7 +209,12 @@ jobs:
           git commit -m "Use sitespeedio/webbrowsers:$TAG" Dockerfile
           git push -f origin "$BRANCH"
           title="Use sitespeedio/webbrowsers:$TAG"
-          body="The [release of the Docker base images]($RUN_URL) published \`sitespeedio/webbrowsers:$TAG\`."
+          body="The [release of the Docker base images]($RUN_URL) published \`sitespeedio/webbrowsers:$TAG\`. It replaces \`$old_tag\`."
+          if [ -n "$CHANGES" ]; then
+            body+=$'\n\nChanged versions:\n'"$(sed 's/^/- /' <<< "$CHANGES")"
+          else
+            body+=$'\n\nNo version changed in this release, the images were built again.'
+          fi
           if [ "$(gh pr view "$BRANCH" --json state -q .state 2>/dev/null)" = OPEN ]; then
             gh pr edit "$BRANCH" --title "$title" --body "$body"
           else
