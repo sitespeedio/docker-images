@@ -3,7 +3,7 @@ variable "UBUNTU_IMAGE" { default = "ubuntu:noble-20261110" }
 variable "UBUNTU_VERSION" { default = "24-04" }
 variable "NODE_VERSION" { default = "26.13.1" }
 variable "FFMPEG_VERSION" { default = "7.1.1" }
-variable "CHROME_VERSION" { default = "157" }
+variable "CHROME_VERSION" { default = "158" }
 variable "FIREFOX_VERSION" { default = "160" }
 variable "EDGE_VERSION" { default = "157" }
 
