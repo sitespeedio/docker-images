@@ -1,11 +1,11 @@
 # Change a version here. The Release workflow starts when the change is on main.
-variable "UBUNTU_IMAGE" { default = "ubuntu:noble-20261110" }
+variable "UBUNTU_IMAGE" { default = "ubuntu:noble-20261110.1" }
 variable "UBUNTU_VERSION" { default = "24-04" }
 variable "NODE_VERSION" { default = "26.13.1" }
 variable "FFMPEG_VERSION" { default = "7.1.1" }
 variable "CHROME_VERSION" { default = "158" }
 variable "FIREFOX_VERSION" { default = "160" }
-variable "EDGE_VERSION" { default = "157" }
+variable "EDGE_VERSION" { default = "158" }
 
 # The Release workflow updates these lines. Keep each on one line.
 variable "NODE_PUBLISHED_TAG" { default = "ubuntu-24-04-nodejs-26.13.1-20261112" }
