@@ -10,7 +10,7 @@ variable "EDGE_VERSION" { default = "158" }
 # The Release workflow updates these lines. Keep each on one line.
 variable "NODE_PUBLISHED_TAG" { default = "ubuntu-24-04-nodejs-26.13.1-20261120" }
 variable "VISUALMETRICS_DEPS_PUBLISHED_TAG" { default = "ffmpeg-7.1.1-20261120" }
-variable "BROWSERS_PUBLISHED_TAG" { default = "chrome-158.0-firefox-160.0-edge-158.0-20261120" }
+variable "BROWSERS_PUBLISHED_TAG" { default = "chrome-158.0-firefox-161.0-edge-158.0-20261124" }
 
 variable "DATE" { default = "dev" }
 # The first image to build. Images before it come from Docker Hub.
